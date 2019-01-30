@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch-2.2.xsd
+           http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <context:component-scan base-package="com.practice.batch"/>
+
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="location" value="application.properties"/>
+    </bean>
+
+    <job id="simpleJob" xmlns="http://www.springframework.org/schema/batch">
+        <step id="step1">
+            <tasklet transaction-manager="transactionManager">
+                <chunk reader="studentReader" processor="studentProcessor" writer="studentWriter" commit-interval="10" />
+            </tasklet>
+            <!--Add JobParameterExecutionContextCopyListener-->
+        </step>
+    </job>
+
+    <bean id="jobRepository"
+          class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+        <property name="transactionManager" ref="transactionManager" />
+    </bean>
+
+    <bean id="jobLauncher"
+          class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="jobRepository" />
+    </bean>
+
+    <bean class="org.springframework.batch.core.scope.StepScope" />
+
+    <bean id="studentReader" class="com.practice.batch.step.StudentReader" />
+
+    <bean id="studentProcessor" class="com.practice.batch.step.StudentProcessor" scope="step">
+        <constructor-arg name="studyingIn" value="#{jobParameters['studyingIn']}" />
+        <constructor-arg name="schoolName" value="#{jobParameters['schoolName']}" />
+    </bean>
+
+    <bean id="transactionManager"
+          class="org.springframework.batch.support.transaction.ResourcelessTransactionManager" />
+
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+</beans>
